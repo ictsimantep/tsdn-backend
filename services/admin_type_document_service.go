@@ -192,11 +192,15 @@ func (s *DocumentTypeService) AddDocumentType(payload *DocumentTypePayload) (*mo
 func (s *DocumentTypeService) GetDocumentTypeByUUID(uuid string) (*models.DocumentType, error) {
 	var documentType models.DocumentType
 
-	if err := config.DB.Where("uuid = ?", uuid).Where("deleted_at IS NULL").First(&documentType).Error; err != nil {
+	// Fetch the document type with RoleHasRules
+	if err := config.DB.
+		Preload("RoleHasRules").
+		Where("uuid = ?", uuid).
+		First(&documentType).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, fmt.Errorf("document type not found")
+			return nil, errors.New("document type not found")
 		}
-		return nil, err
+		return nil, fmt.Errorf("failed to fetch document type: %w", err)
 	}
 
 	return &documentType, nil

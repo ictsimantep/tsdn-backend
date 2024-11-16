@@ -23,7 +23,69 @@ func SetupRoutes(app *fiber.App) {
 	api.Post("/auth/password/reset", controllers.ResetPasswordHandler)
 	api.Get("/auth/me", middleware.JWTMiddleware(), controllers.GetUserData)
 
+	publicationController := controllers.NewPublicationController()
+	api.Get("/publications/:slug", publicationController.GetPublication)
+	api.Get("/publications/category/:slug", publicationController.GetPublicationByCategory)
+	api.Get("/publications/categories/:slug", publicationController.GetPublicationByCategory)
+
+	// Gallery routes (public)
+	galleryController := controllers.NewGalleryController()
+	api.Get("/galleries", galleryController.GetGalleries)
+	api.Get("/galleries/group-by-category", galleryController.GroupByCategory)
+
+	// Menu routes (public)
+	menuController := controllers.NewMenuController()
+	api.Get("/menus", menuController.GetMenus)
+	api.Get("/menus/:id", menuController.GetMenuByID)
+
+	// Footer routes (public)
+	footerController := controllers.NewFooterController()
+	api.Get("/footers", footerController.GetFooters)
+	api.Get("/footers/:id", footerController.GetFooterByID)
+
+	// Page routes (public)
+	pageController := controllers.NewPageController()
+	api.Get("/pages", pageController.GetAllPages)
+	api.Get("/pages/byslug", pageController.GetPageBySlug)
+
+	formController := controllers.NewFormController()
+	api.Get("/forms/:slug", formController.GetFormBySlug)
+	api.Post("/forms/:slug/submit", formController.SubmitFormHandler)
+
+	bannerController := controllers.NewBannerController()
+	api.Get("/banners", bannerController.GetBanners)
+
+	eventController := controllers.NewEventController()
+	api.Get("/events", eventController.GetEvents)
+	api.Get("/events/search", eventController.Search)
+
+	testimonialController := controllers.NewTestimonialController()
+	api.Get("/testimonials", testimonialController.GetTestimonials)
+	api.Post("/testimonials", testimonialController.CreateTestimonial)
+	api.Get("/testimonials/:id", testimonialController.GetTestimonialByID)
+	api.Put("/testimonials/:id", testimonialController.UpdateTestimonial)
+	api.Delete("/testimonials/:id", testimonialController.DeleteTestimonial)
+
+	teacherController := controllers.NewTeacherController()
+	personController := controllers.NewPersonController()
+
+	api.Get("/teachers", teacherController.GetTeachers)
+	api.Post("/teachers", teacherController.CreateTeacher)
+	api.Get("/teachers/:id", teacherController.GetTeacherByID)
+	api.Put("/teachers/:id", teacherController.UpdateTeacher)
+	api.Delete("/teachers/:id", teacherController.DeleteTeacher)
+
+	api.Get("/people", personController.GetPeople)
+	api.Post("/people", personController.CreatePerson)
+	api.Get("/people/:id", personController.GetPersonByID)
+	api.Put("/people/:id", personController.UpdatePerson)
+	api.Delete("/people/:id", personController.DeletePerson)
+
 	protectedUser := api.Group("/user", middleware.JWTMiddleware())
+	protectedUser.Post("/profile/update", controllers.UpdateUserProfileController)
+	protectedUser.Get("/profile/detail", controllers.GetUserDetailController)
+	protectedUser.Post("/change-password", controllers.ChangePasswordController)
+
 	documentControlController := controllers.NewDocumentControlController()
 	protectedUser.Get("/document-control/list/internal", documentControlController.GetDocumentInternalControls) // List document controls with pagination
 	protectedUser.Get("/document-control/list/external", documentControlController.GetDocumentExternalControls) // List document controls with pagination
@@ -88,6 +150,13 @@ func SetupRoutes(app *fiber.App) {
 	protectedAdmin.Get("/document-type/:uuid", documentTypeController.GetDocumentTypeByUUID)        // Get a document type by UUID
 	protectedAdmin.Put("/document-type/update/:uuid", documentTypeController.UpdateDocumentType)    // Update a document type by UUID
 	protectedAdmin.Delete("/document-type/delete/:uuid", documentTypeController.DeleteDocumentType) // Delete a document type by UUID
+
+	healthController := controllers.NewHealthController()
+	protectedAdmin.Get("/health", healthController.GetHealths)            // List document types with pagination
+	protectedAdmin.Post("/health", healthController.CreateHealth)         // Create a new document type
+	protectedAdmin.Get("/health/:uuid", healthController.GetHealthByUUID) // Get a document type by UUID
+	// protectedAdmin.Put("/health/update/:uuid", healthController.UpdateHealth)    // Update a document type by UUID
+	protectedAdmin.Delete("/health/delete/:uuid", healthController.DeleteHealth) // Delete a document type by UUID
 
 	protectedAdmin.Get("/role-action-master", categoryDocumentController.GetRolesAndActions)
 	// Delete a document control by UUID

@@ -610,6 +610,112 @@ func CreateUserByAdminHandler(c *fiber.Ctx) error {
 	})
 }
 
+// ChangePasswordController handles the request to change a user's password
+func ChangePasswordController(c *fiber.Ctx) error {
+	// Ambil username dari konteks (misalnya dari token JWT yang sudah di-decode)
+	username := c.Locals("username").(string)
+
+	// Deklarasikan variabel untuk menampung request payload
+	var req services.ChangePasswordRequest
+
+	// Parse dan validasi request payload
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"statusCode": fiber.StatusBadRequest,
+			"message":    "Invalid request payload",
+		})
+	}
+
+	// Panggil service untuk mengubah password pengguna
+	err := services.ChangePassword(username, req)
+	if err != nil {
+		// Periksa jenis error dan sesuaikan pesan respons
+		if err.Error() == "user not found" {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+				"statusCode": fiber.StatusNotFound,
+				"message":    "User not found",
+			})
+		}
+		if err.Error() == "old password is incorrect" {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"statusCode": fiber.StatusUnauthorized,
+				"message":    "Old password is incorrect",
+			})
+		}
+		if err.Error() == "new password and confirm password do not match" {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"statusCode": fiber.StatusBadRequest,
+				"message":    "New password and confirm password do not match",
+			})
+		}
+		// Jika error lain, kembalikan respons 500 (Internal Server Error)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"statusCode": fiber.StatusInternalServerError,
+			"message":    "Failed to update password",
+		})
+	}
+
+	// Kembalikan respons sukses jika password berhasil diubah
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"statusCode": fiber.StatusOK,
+		"message":    "Password updated successfully",
+	})
+}
+
+func GetUserDetailController(c *fiber.Ctx) error {
+	// Ambil username dari konteks (misalnya dari token JWT yang sudah di-decode)
+	username := c.Locals("username").(string)
+
+	// Panggil service untuk mengambil detail pengguna berdasarkan username
+	response, err := services.GetUserDetail(username)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"statusCode": fiber.StatusNotFound,
+			"message":    "User not found",
+		})
+	}
+
+	// Kembalikan respons yang berhasil dengan data pengguna
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"statusCode": fiber.StatusOK,
+		"message":    "User detail retrieved successfully",
+		"data":       response,
+	})
+}
+
+// UpdateUserProfileController handles the request to update a user's profile
+func UpdateUserProfileController(c *fiber.Ctx) error {
+	// Ambil username dari konteks (misalnya dari token JWT atau konteks yang diset sebelumnya)
+	username := c.Locals("username").(string)
+
+	// Deklarasikan variabel untuk menampung request payload
+	var req dto.UpdateUserRequest
+
+	// Parse dan validasi request payload
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"statusCode": fiber.StatusBadRequest,
+			"message":    "Invalid request payload",
+		})
+	}
+
+	// Panggil service untuk memperbarui profil pengguna
+	response, err := services.UpdateUserProfile(username, req)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"statusCode": fiber.StatusInternalServerError,
+			"message":    err.Error(),
+		})
+	}
+
+	// Kembalikan respons yang berhasil jika update sukses
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"statusCode": fiber.StatusOK,
+		"message":    "User profile updated successfully",
+		"data":       response,
+	})
+}
+
 // UpdateUserByAdminHandler handles the request to update user details by admin
 func UpdateUserByAdminHandler(c *fiber.Ctx) error {
 	requesterUsername := c.Locals("username").(string)

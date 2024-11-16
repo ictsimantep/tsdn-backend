@@ -1,5 +1,7 @@
 package dto
 
+import "time"
+
 type LoginRequest struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
@@ -29,4 +31,17 @@ type UpdateUserResponse struct {
 	Mobile   string `json:"mobile"`
 	Email    string `json:"email"`
 	Message  string `json:"message"`
+}
+
+// UserDetailResponse is the response struct for user detail
+type UserDetailResponse struct {
+	ID         uint       `json:"id"`
+	UUID       string     `json:"uuid"`
+	Fullname   string     `json:"fullname"`
+	Username   string     `json:"username"`
+	Mobile     string     `json:"mobile"`
+	Email      string     `json:"email"`
+	CreatedAt  time.Time  `json:"created_at"`
+	UpdatedAt  time.Time  `json:"updated_at"`
+	VerifiedAt *time.Time `json:"verified_at,omitempty"`
 }

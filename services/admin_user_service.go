@@ -22,6 +22,12 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+type ChangePasswordRequest struct {
+	OldPassword     string `json:"old_password" validate:"required"`
+	NewPassword     string `json:"new_password" validate:"required,min=8"`
+	ConfirmPassword string `json:"confirm_password" validate:"required,min=8"`
+}
+
 // Load JWT_SECRET from environment variable (SECRET_KEY)
 var jwtSecret = []byte(os.Getenv("SECRET_KEY"))
 
@@ -428,6 +434,78 @@ func DeleteUserRoleByUUID(userUUID string, roleGuardName string) error {
 	return nil
 }
 
+// UpdateUserProfile updates the profile of a user based on the provided UpdateUserRequest
+func UpdateUserProfile(username string, req dto.UpdateUserRequest) (*dto.UpdateUserResponse, error) {
+	var user models.UserRegister
+
+	// Find the user by username in the database
+	if err := config.DB.Where("username = ?", username).Where("deleted_at", nil).First(&user).Error; err != nil {
+		return nil, errors.New("user not found")
+	}
+
+	// Update fields if provided in the request
+	if req.Fullname != "" {
+		user.Fullname = req.Fullname
+	}
+	if req.Mobile != "" {
+		user.Mobile = req.Mobile
+	}
+	// if req.Password != "" {
+	// 	// Hash the new password before storing it
+	// 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	// 	if err != nil {
+	// 		return nil, errors.New("failed to hash password")
+	// 	}
+	// 	user.Password = string(hashedPassword)
+	// }
+
+	// Update the `UpdatedAt` timestamp
+	user.UpdatedAt = time.Now()
+
+	// Save the updated user data
+	if err := config.DB.Save(&user).Error; err != nil {
+		return nil, errors.New("failed to update user profile")
+	}
+
+	// Prepare the response data
+	response := &dto.UpdateUserResponse{
+		ID:       user.ID,
+		UUID:     user.UUID.String(),
+		Fullname: user.Fullname,
+		Username: user.Username,
+		Mobile:   user.Mobile,
+		Email:    user.Email,
+		Message:  "User profile updated successfully",
+	}
+
+	return response, nil
+}
+
+// GetUserDetail retrieves user details by username
+func GetUserDetail(username string) (*dto.UserDetailResponse, error) {
+	var user models.UserRegister
+
+	// Find the user by username in the database
+	if err := config.DB.Where("username = ?", username).Where("deleted_at", nil).First(&user).Error; err != nil {
+		return nil, errors.New("user not found")
+	}
+
+	// Prepare the response data
+	response := &dto.UserDetailResponse{
+		ID:         user.ID,
+		UUID:       user.UUID.String(),
+		Fullname:   user.Fullname,
+		Username:   user.Username,
+		Mobile:     user.Mobile,
+		Email:      user.Email,
+		CreatedAt:  user.CreatedAt,
+		UpdatedAt:  user.UpdatedAt,
+		VerifiedAt: user.VerifiedAt,
+	}
+
+	return response, nil
+}
+
 // CreateUserByAdmin allows an admin to create a user with a specific role_guard_name
 func CreateUserByAdmin(req dto.RegisterRequest, roleGuardName string) (*dto.RegisterResponse, error) {
 	var existingUser models.UserRegister
@@ -654,6 +732,40 @@ func DeactivateUser(userUUID string) error {
 	// Save the updated user status to the database
 	if err := config.DB.Save(&user).Error; err != nil {
 		return errors.New("failed to deactivate user")
+	}
+
+	return nil
+}
+
+// ChangePassword memungkinkan pengguna mengubah password mereka
+func ChangePassword(username string, req ChangePasswordRequest) error {
+	var user models.UserRegister
+
+	// Cari pengguna berdasarkan username
+	if err := config.DB.Where("username = ?", username).First(&user).Error; err != nil {
+		return errors.New("user not found")
+	}
+
+	// Verifikasi apakah password lama yang dimasukkan benar
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.OldPassword)); err != nil {
+		return errors.New("old password is incorrect")
+	}
+
+	// Cek apakah NewPassword dan ConfirmPassword cocok
+	if req.NewPassword != req.ConfirmPassword {
+		return errors.New("new password and confirm password do not match")
+	}
+
+	// Hash password baru
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return errors.New("failed to hash new password")
+	}
+
+	// Update password dalam database
+	user.Password = string(hashedPassword)
+	if err := config.DB.Save(&user).Error; err != nil {
+		return errors.New("failed to update password")
 	}
 
 	return nil
