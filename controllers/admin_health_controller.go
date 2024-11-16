@@ -62,13 +62,13 @@ func (c *HealthController) GetHealths(ctx *fiber.Ctx) error {
 	showAll := ctx.Query("showAll", "")
 
 	currentPage, err := strconv.Atoi(pageStr)
-	if err != nil || currentPage < 1 {
-		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"statusCode": fiber.StatusBadRequest,
-			"message":    "Invalid currentPage",
-			"data":       nil,
-		})
-	}
+	// if err != nil || currentPage < 1 {
+	// 	return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+	// 		"statusCode": fiber.StatusBadRequest,
+	// 		"message":    "Invalid currentPage",
+	// 		"data":       nil,
+	// 	})
+	// }
 
 	pageSize, err := strconv.Atoi(pageSizeStr)
 	if err != nil || pageSize < 1 {

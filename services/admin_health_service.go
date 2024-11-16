@@ -47,7 +47,7 @@ func (s *HealthService) GetHealthsPaginated(currentPage, pageSize int, search st
 	var Healths []models.Health
 	var totalRecords int64
 
-	offset := (currentPage - 1) * pageSize
+	offset := (currentPage) * pageSize
 
 	// Query dasar untuk health data
 	query := config.DB.Model(&models.Health{}).Where("deleted_at IS NULL")
