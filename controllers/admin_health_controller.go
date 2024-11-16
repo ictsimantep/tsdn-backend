@@ -32,7 +32,7 @@ type HealthRequest struct {
 	Profesi      string `json:"profesi"`
 }
 
-// GetHealths retrieves a paginated list of document types.
+// GetHealths retrieves a paginated list of health data.
 func (c *HealthController) GetHealths(ctx *fiber.Ctx) error {
 	username := ctx.Locals("username").(string)
 
@@ -79,12 +79,12 @@ func (c *HealthController) GetHealths(ctx *fiber.Ctx) error {
 		})
 	}
 
-	// Call service to get paginated document types
+	// Call service to get paginated health data
 	result, err := c.Service.GetHealthsPaginated(currentPage, pageSize, search, showAll)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"statusCode": fiber.StatusInternalServerError,
-			"message":    "Failed to fetch document types",
+			"message":    "Failed to fetch health data",
 			"data":       nil,
 		})
 	}
@@ -131,17 +131,17 @@ func (c *HealthController) CreateHealth(ctx *fiber.Ctx) error {
 
 	// Convert HealthRequest to Health model
 	Health := services.HealthPayload{
-		Nama:         req.Nama,
-		JenisKelamin: req.JenisKelamin,
-		Umur:         req.Umur,
-		Bb:           req.Bb,
-		Tb:           req.Tb,
-		Systol:       req.Systol,
-		Diastol:      req.Diastol,
-		HeartRate:    req.HeartRate,
-		Profesi:      req.Profesi,
+		Nama:         ctx.FormValue("nama"),
+		JenisKelamin: ctx.FormValue("jenis_kelamin"),
+		Umur:         ctx.FormValue("umur"),
+		Bb:           ctx.FormValue("bb"),
+		Tb:           ctx.FormValue("tb"),
+		Systol:       ctx.FormValue("systol"),
+		Diastol:      ctx.FormValue("diastol"),
+		HeartRate:    ctx.FormValue("heart_rate"),
+		Profesi:      ctx.FormValue("profesi"),
 	}
-
+	log.Printf("Payload: %v", Health)
 	// Call service to create the document type
 	createdHealth, err := c.Service.AddHealth(&Health)
 	if err != nil {
